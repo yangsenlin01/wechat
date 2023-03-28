@@ -6,7 +6,7 @@ import java.io.StringWriter;
 /**
  * 错误信息处理类。
  *
- * @author valin
+ * @author 1050696985@qq.com
  */
 public class ExceptionUtil {
     /**

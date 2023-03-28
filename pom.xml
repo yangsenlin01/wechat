@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.tba</groupId>
     <artifactId>wechat</artifactId>
@@ -19,6 +19,7 @@
         <orika-code.version>1.5.4</orika-code.version>
         <hutool.version>5.8.16</hutool.version>
         <fastjson.version>2.0.25</fastjson.version>
+        <openai-gpt3.version>0.11.1</openai-gpt3.version>
     </properties>
     <dependencies>
         <dependency>
@@ -74,6 +75,17 @@
         <dependency>
             <groupId>javax.validation</groupId>
             <artifactId>validation-api</artifactId>
+        </dependency>
+        <!-- openai 客户端工具 https://github.com/TheoKanning/openai-java -->
+        <dependency>
+            <groupId>com.theokanning.openai-gpt3-java</groupId>
+            <artifactId>api</artifactId>
+            <version>${openai-gpt3.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.theokanning.openai-gpt3-java</groupId>
+            <artifactId>service</artifactId>
+            <version>${openai-gpt3.version}</version>
         </dependency>
     </dependencies>
     <dependencyManagement>
