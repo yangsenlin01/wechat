@@ -1,0 +1,84 @@
+# 应用服务 WEB 访问端口
+server:
+  # 服务器的HTTP端口，默认为8080
+  port: ${SERVER_PORT:8080}
+  servlet:
+    # 应用的访问路径
+    context-path: ${SERVER_SERVLET_CONTEXT_PATH:/}
+  undertow:
+    # HTTP post内容的最大大小。当值为-1时，默认值为大小是无限的，可设置10M
+    max-http-post-size: 10485760
+    # 以下的配置会影响buffer,这些buffer会用于服务器连接的IO操作,有点类似netty的池化内存管理
+    # 每块buffer的空间大小,越小的空间被利用越充分
+    buffer-size: 512
+    # 是否分配的直接内存
+    direct-buffers: true
+    threads:
+      # 设置IO线程数, 它主要执行非阻塞的任务,它们会负责多个连接, 默认设置每个CPU核心一个线程
+      io: 4
+      # 阻塞任务线程池, 当执行类似servlet请求阻塞操作, undertow会从这个线程池中取得线程,它的值设置取决于系统的负载
+      # 默认等于 io-threads*8，它的值设置取决于系统的负载，可适当调大该值
+      worker: 128
+
+spring:
+  application:
+    name: wechat
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:windows}
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+    url: ${SPRING_DATASOURCE_HIKARI_JDBC_URL:jdbc:mysql://localhost:3306/wechat?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true}
+    username: ${SPRING_DATASOURCE_HIKARI_USERNAME:root}
+    password: ${SPRING_DATASOURCE_HIKARI_PASSWORD:123456}
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 10
+      auto-commit: true
+      pool-name: MyHikariCP
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      connection-test-query: select 1
+
+  # 文件上传
+  servlet:
+    multipart:
+      # 单个文件大小
+      max-file-size: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:100MB}
+      # 设置总上传的文件大小
+      max-request-size: ${PRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:1000MB}
+      location: ${SPRING_SERVLET_MULTIPART_LOCATION:/Users/yangsenlin/work/valin/code_runtime_file/tmp}
+
+# MyBatis配置
+mybatis-plus:
+  # 搜索指定包别名
+  typeAliasesPackage: com.tba.wechat.**.domain
+  # 配置mapper的扫描，找到所有的mapper.xml映射文件
+  mapperLocations: classpath*:mapper/**/*Mapper.xml
+  # 加载全局的配置文件
+  # configLocation: classpath:mybatis/mybatis-config.xml
+  global-config:
+    db-config:
+      # 主键自增
+      id-type: auto
+  configuration:
+    # 全局映射器启用缓存
+    cache-enabled: true
+    # 允许 JDBC 支持自动生成主键
+    use-generated-keys: true
+    # 配置默认的执行器
+    default-executor-type: reuse
+    # 指定 MyBatis 所用日志的具体实现
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+    # 驼峰式命名
+    map-underscore-to-camel-case: true
+
+# 日志配置
+logging:
+  level:
+    org.springframework: ${LOGGING_LEVEL_SPRING_FRAMEWORK:warn}
+  file:
+    # 日志文件输出地址
+    path: ${LOGGING_FILE_PATH:/Users/yangsenlin/work/valin/code_runtime_file/wechat_logs}
+  # 指定配置文件
+  config: classpath:logback-spring.xml
