@@ -76,10 +76,18 @@ mybatis-plus:
 # 日志配置
 logging:
   level:
-    com.tba.wechat: ${LOGGING_LEVEL_WECHAT:warn}
+    com.tba.wechat: ${LOGGING_LEVEL_WECHAT:debug}
     org.springframework: ${LOGGING_LEVEL_SPRING_FRAMEWORK:warn}
   file:
     # 日志文件输出地址
     path: ${LOGGING_FILE_PATH:/Users/yangsenlin/work/valin/code_runtime_file/wechat_logs}
   # 指定配置文件
   config: classpath:logback-spring.xml
+
+# 自定义配置
+tba:
+  wechat:
+    app-id: ${TBA_WECHAT_APP_ID:}
+    app-secret: ${TBA_WECHAT_APP_SECRET:}
+    server-token: ${TBA_WECHAT_SERVER_TOKEN:}
+    encoding-aes-key: ${TBA_WECHAT_ENCODING_AES_KEY:}

@@ -34,7 +34,7 @@ public class CheckHeaderSignInterceptor implements HandlerInterceptor {
         }
         String username = request.getHeader("v-username");
         String password = request.getHeader("v-password");
-        LOGGER.info("---->>>> v-username: {}, v-password: {}", username, password);
+        LOGGER.debug("---->>>> v-username: {}, v-password: {}", username, password);
 
         if (StrUtil.isBlank(username) || StrUtil.isBlank(password)) {
             ServletUtils.renderString(response, JSON.toJSONString(Result.error("认证失败")));
