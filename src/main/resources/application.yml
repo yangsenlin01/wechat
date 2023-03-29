@@ -28,9 +28,9 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     type: com.zaxxer.hikari.HikariDataSource
-    url: ${SPRING_DATASOURCE_HIKARI_JDBC_URL:jdbc:mysql://localhost:3306/wechat?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true}
-    username: ${SPRING_DATASOURCE_HIKARI_USERNAME:root}
-    password: ${SPRING_DATASOURCE_HIKARI_PASSWORD:123456}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/wechat?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:123456}
     hikari:
       minimum-idle: 5
       maximum-pool-size: 10
@@ -76,6 +76,7 @@ mybatis-plus:
 # 日志配置
 logging:
   level:
+    com.tba.wechat: ${LOGGING_LEVEL_WECHAT:warn}
     org.springframework: ${LOGGING_LEVEL_SPRING_FRAMEWORK:warn}
   file:
     # 日志文件输出地址

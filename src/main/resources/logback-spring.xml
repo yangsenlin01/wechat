@@ -108,6 +108,9 @@
         <springProfile name="DEV">
             <appender-ref ref="ASYNC_DEV"/>
         </springProfile>
+        <springProfile name="WINDOS">
+            <appender-ref ref="ASYNC_DEV"/>
+        </springProfile>
         <springProfile name="UAT">
             <appender-ref ref="ASYNC_UAT"/>
         </springProfile>
