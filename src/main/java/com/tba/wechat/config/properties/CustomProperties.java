@@ -29,4 +29,9 @@ public class CustomProperties {
      */
     private Wechat wechat;
 
+    /**
+     * OpenAi配置
+     */
+    private OpenAi openAi;
+
 }

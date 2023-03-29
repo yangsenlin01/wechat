@@ -5,9 +5,11 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.tba.wechat.component.type.TextMessage;
 import com.tba.wechat.config.properties.CustomProperties;
 import com.tba.wechat.exception.CustomException;
 import com.tba.wechat.util.Sha1Utils;
+import com.tba.wechat.util.WechatUtils;
 import com.tba.wechat.web.domain.entity.WechatToken;
 import com.tba.wechat.web.service.IWechatTokenService;
 import org.slf4j.Logger;
@@ -36,10 +38,12 @@ public class WechatComponent {
 
     private final CustomProperties customProperties;
     private final IWechatTokenService wechatTokenService;
+    private final TextMessageProcess textMessageProcess;
 
-    public WechatComponent(CustomProperties customProperties, IWechatTokenService wechatTokenService) {
+    public WechatComponent(CustomProperties customProperties, IWechatTokenService wechatTokenService, TextMessageProcess textMessageProcess) {
         this.customProperties = customProperties;
         this.wechatTokenService = wechatTokenService;
+        this.textMessageProcess = textMessageProcess;
     }
 
     /**
@@ -51,7 +55,7 @@ public class WechatComponent {
      * @param echostr
      * @return
      */
-    public boolean checkDomain(String signature, String timestamp, String nonce, String echostr) {
+    public String checkDomain(String signature, String timestamp, String nonce, String echostr) {
         LOGGER.info("收到check参数，signature：{}， timestamp：{}，nonce：{}，echostr：{}", signature, timestamp, nonce, echostr);
 
         TreeSet<String> set = new TreeSet<>();
@@ -68,7 +72,35 @@ public class WechatComponent {
         finalStr = Sha1Utils.encryption(finalStr);
         LOGGER.info("加密后的字符串：{}", finalStr);
 
-        return signature.equals(finalStr);
+        return signature.equals(finalStr) ? echostr : "";
+    }
+
+    /**
+     * 处理客户端消息
+     *
+     * @param message
+     * @return
+     */
+    public String processMessage(String message) {
+        LOGGER.info("收到客户端消息：{}", message);
+
+        if (message == null) {
+            return "";
+        }
+
+        Object o;
+        try {
+            o = WechatUtils.parseMessage(message);
+        } catch (Exception e) {
+            LOGGER.info(e.getMessage(), e);
+            return "";
+        }
+
+        if (o.getClass() == TextMessage.class) {
+            return textMessageProcess.process((TextMessage) o);
+        } else {
+            return "";
+        }
     }
 
     /**
@@ -124,5 +156,4 @@ public class WechatComponent {
 
         return token;
     }
-
 }

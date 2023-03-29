@@ -2,6 +2,7 @@ package com.tba.wechat;
 
 import cn.hutool.http.HttpRequest;
 import com.alibaba.fastjson.JSON;
+import com.tba.wechat.util.WechatUtils;
 import com.theokanning.openai.completion.CompletionRequest;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.completion.chat.ChatMessage;
@@ -10,7 +11,11 @@ import com.theokanning.openai.service.OpenAiService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.*;
+import javax.xml.parsers.ParserConfigurationException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @SpringBootTest
 class WechatApplicationTests {
@@ -55,7 +60,7 @@ class WechatApplicationTests {
     @Test
     void testChatCompletionRequest() {
         System.setProperty("https.proxyHost", "127.0.0.1");
-        System.setProperty("https.proxyPort", "10809");
+        System.setProperty("https.proxyPort", "7890");
 
         OpenAiService service = new OpenAiService(API_KEY);
 
@@ -78,6 +83,35 @@ class WechatApplicationTests {
                 .temperature(0.8)
                 .build();
         service.createChatCompletion(chatCompletionRequest).getChoices().forEach(System.out::println);
+    }
+
+    @Test
+    void testGeneratorXml() {
+        String toUserName = "toUser";
+        String fromUserName = "fromUser";
+        Long createTime = 12345678L;
+        String content = "你好";
+
+        Map<String, Object> map = new HashMap<>(7);
+        map.put("ToUserName", toUserName);
+        map.put("FromUserName", fromUserName);
+        map.put("CreateTime", createTime);
+        map.put("MsgType", "text");
+        map.put("Content", content);
+
+        String xml;
+        try {
+            xml = WechatUtils.generatorXml(map);
+        } catch (ParserConfigurationException e) {
+            e.printStackTrace();
+            try {
+                map.put("Content", "yy好像出了点问题");
+                xml = WechatUtils.generatorXml(map);
+            } catch (ParserConfigurationException ex) {
+                xml = "";
+            }
+        }
+        System.out.println(xml);
     }
 
 }

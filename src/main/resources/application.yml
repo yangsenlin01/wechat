@@ -91,3 +91,5 @@ tba:
     app-secret: ${TBA_WECHAT_APP_SECRET:}
     server-token: ${TBA_WECHAT_SERVER_TOKEN:}
     encoding-aes-key: ${TBA_WECHAT_ENCODING_AES_KEY:}
+  openai:
+    api-key: ${TBA_OPENAI_API_KEY:}

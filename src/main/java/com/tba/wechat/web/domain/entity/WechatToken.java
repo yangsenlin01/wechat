@@ -24,9 +24,6 @@ import java.util.Date;
 @TableName("wechat_token")
 public class WechatToken {
 
-    public static final String FIELD_TOKEN = "token";
-    public static final String FIELD_EXPIRES_TIME = "expires_time";
-
     @TableId
     private Long id;
 
