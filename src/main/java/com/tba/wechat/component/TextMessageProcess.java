@@ -4,9 +4,13 @@ import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.tba.wechat.component.type.TextMessage;
 import com.tba.wechat.config.properties.CustomProperties;
+import com.tba.wechat.util.ExceptionUtil;
 import com.tba.wechat.util.WechatUtils;
 import com.tba.wechat.web.domain.entity.WechatMessage;
+import com.tba.wechat.web.domain.entity.WechatWhiteList;
 import com.tba.wechat.web.service.IWechatMessageService;
+import com.tba.wechat.web.service.IWechatWhiteListService;
+import com.theokanning.openai.completion.CompletionRequest;
 import com.theokanning.openai.completion.chat.ChatCompletionChoice;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.completion.chat.ChatMessage;
@@ -18,7 +22,7 @@ import org.springframework.stereotype.Component;
 
 import javax.xml.parsers.ParserConfigurationException;
 import java.time.Duration;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,13 +43,14 @@ public class TextMessageProcess {
     private static final Logger LOGGER = LoggerFactory.getLogger(TextMessageProcess.class);
 
     private final IWechatMessageService wechatMessageService;
+    private final IWechatWhiteListService wechatWhiteListService;
     private final CustomProperties customProperties;
 
-    public TextMessageProcess(IWechatMessageService wechatMessageService, CustomProperties customProperties) {
+    public TextMessageProcess(IWechatMessageService wechatMessageService, IWechatWhiteListService wechatWhiteListService, CustomProperties customProperties) {
         this.wechatMessageService = wechatMessageService;
+        this.wechatWhiteListService = wechatWhiteListService;
         this.customProperties = customProperties;
     }
-
 
     /**
      * 收到文本的后续操作
@@ -54,34 +59,34 @@ public class TextMessageProcess {
      * @return 返回客户端的消息
      */
     public String process(TextMessage message) {
+
+        // 查询是否白名单用户
+        LambdaQueryWrapper<WechatWhiteList> whiteListQueryWrapper = new LambdaQueryWrapper<>();
+        whiteListQueryWrapper.eq(WechatWhiteList::getOpenId, message.getFromUserName());
+        if (wechatWhiteListService.count(whiteListQueryWrapper) == 0) {
+            return this.replyMessage(message.getFromUserName(), message.getToUserName(), message.getCreateTime(), "你好");
+        }
+
+        // 查询消息是否已回复
         LambdaQueryWrapper<WechatMessage> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(WechatMessage::getMsgId, message.getMsgId());
-        if (wechatMessageService.count(queryWrapper) > 0) {
-            return "";
-        }
-        if (!message.getContent().startsWith("yy")) {
-            // 清除聊天记录
-            if ("清除记录".equals(message.getContent())) {
-                queryWrapper = new LambdaQueryWrapper<>();
-                queryWrapper.and(item -> item
-                        .eq(WechatMessage::getFromUserName, message.getFromUserName())
-                        .or()
-                        .eq(WechatMessage::getToUserName, message.getFromUserName()));
-                wechatMessageService.remove(queryWrapper);
-                return this.replyMessage(message.getFromUserName(), message.getToUserName(), message.getCreateTime(), "OK，已清除记录");
+        queryWrapper.orderByDesc(WechatMessage::getId);
+        List<WechatMessage> x = wechatMessageService.list(queryWrapper);
+        if (CollectionUtil.isNotEmpty(x)) {
+            if (x.size() > 1) {
+                WechatMessage y = x.get(0);
+                return this.replyMessage(y.getToUserName(), y.getFromUserName(), y.getCreateTime(), y.getContent());
+            } else {
+                try {
+                    Thread.sleep(1000 * 10);
+                } catch (InterruptedException e) {
+                    LOGGER.info(e.getMessage(), e);
+                }
+                return "";
             }
-            return this.replyMessage(message.getFromUserName(), message.getToUserName(), message.getCreateTime(), "我是个莫的感情的yy：" + message.getContent());
         }
 
-        // 获取历史消息
-        queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.and(item -> item
-                .eq(WechatMessage::getFromUserName, message.getFromUserName())
-                .or()
-                .eq(WechatMessage::getToUserName, message.getFromUserName()));
-        queryWrapper.last("order by create_time limit 10");
-        List<WechatMessage> wechatMessageList = wechatMessageService.list(queryWrapper);
-
+        // 保存客户端消息
         WechatMessage wechatMessage = new WechatMessage();
         wechatMessage.setToUserName(message.getToUserName());
         wechatMessage.setFromUserName(message.getFromUserName());
@@ -90,54 +95,18 @@ public class TextMessageProcess {
         wechatMessage.setMsgId(message.getMsgId());
         wechatMessageService.save(wechatMessage);
 
-        if (CollectionUtil.isEmpty(wechatMessageList)) {
-            wechatMessageList = new ArrayList<>();
-        }
-        wechatMessageList.add(wechatMessage);
+        // 请求openai
+        String response = this.completionRequest(wechatMessage);
+        // 保存回复的消息
+        WechatMessage saveMessage = new WechatMessage();
+        saveMessage.setToUserName(message.getFromUserName());
+        saveMessage.setFromUserName(message.getToUserName());
+        saveMessage.setMsgId(message.getMsgId());
+        saveMessage.setCreateTime(System.currentTimeMillis() / 1000);
+        saveMessage.setContent(response);
+        wechatMessageService.save(saveMessage);
 
-        // 使用历史消息构造openai的chat请求参数
-        List<ChatMessage> chatMessageList = wechatMessageList.stream().map(item -> {
-            if (item.getFromUserName().equals(message.getFromUserName())) {
-                return new ChatMessage(ChatMessageRole.USER.value(), item.getContent());
-            } else {
-                return new ChatMessage(ChatMessageRole.ASSISTANT.value(), item.getContent());
-            }
-        }).collect(Collectors.toList());
-
-        OpenAiService service = new OpenAiService(customProperties.getOpenAi().getApiKey(), Duration.ofSeconds(15));
-
-        ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
-                .model("gpt-3.5-turbo")
-                .messages(chatMessageList)
-                .maxTokens(4000)
-                .temperature(0.8)
-                .build();
-        List<ChatCompletionChoice> choiceList;
-        try {
-            choiceList = service.createChatCompletion(chatCompletionRequest).getChoices();
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
-            if (e.getMessage() != null && e.getMessage().toLowerCase().contains("timeout")) {
-                return this.replyMessage(message.getFromUserName(), message.getToUserName(), message.getCreateTime(), "yy脑子不够用了");
-            }
-            return this.replyMessage(message.getFromUserName(), message.getToUserName(), message.getCreateTime(), "yy好像出了点问题");
-        }
-        if (CollectionUtil.isEmpty(choiceList)) {
-            LOGGER.error("openai响应结果为空");
-            return "";
-        }
-        for (ChatCompletionChoice chatCompletionChoice : choiceList) {
-            LOGGER.info("openai 响应结果：{}", chatCompletionChoice.toString());
-        }
-
-        wechatMessage = new WechatMessage();
-        wechatMessage.setToUserName(message.getFromUserName());
-        wechatMessage.setFromUserName(message.getToUserName());
-        wechatMessage.setCreateTime(System.currentTimeMillis() / 1000);
-        wechatMessage.setContent(choiceList.get(0).getMessage().getContent());
-        wechatMessageService.save(wechatMessage);
-
-        return this.replyMessage(wechatMessage.getToUserName(), wechatMessage.getFromUserName(), wechatMessage.getCreateTime(), wechatMessage.getContent());
+        return this.replyMessage(saveMessage.getToUserName(), saveMessage.getFromUserName(), saveMessage.getCreateTime(), saveMessage.getContent());
     }
 
     /**
@@ -162,7 +131,7 @@ public class TextMessageProcess {
         } catch (ParserConfigurationException e) {
             LOGGER.error(e.getMessage(), e);
             try {
-                map.put("Content", "yy好像出了点问题");
+                map.put("Content", "生成xml出了点问题");
                 xml = WechatUtils.generatorXml(map);
             } catch (ParserConfigurationException ex) {
                 xml = "";
@@ -171,4 +140,80 @@ public class TextMessageProcess {
         return xml;
     }
 
+    /**
+     * 请求openai并将消息保存
+     *
+     * @param wechatMessage
+     */
+//    @Async("taskExecutor")
+    public String chatCompletionRequest(WechatMessage wechatMessage) {
+
+//        queryWrapper = new LambdaQueryWrapper<>();
+//        queryWrapper.and(item -> item
+//                .eq(WechatMessage::getFromUserName, message.getFromUserName())
+//                .or()
+//                .eq(WechatMessage::getToUserName, message.getFromUserName()));
+//        queryWrapper.last("order by create_time limit 10");
+//        List<WechatMessage> wechatMessageList = wechatMessageService.list(queryWrapper);
+//        if (CollectionUtil.isEmpty(wechatMessageList)) {
+//            wechatMessageList = new ArrayList<>();
+//        }
+
+        List<WechatMessage> wechatMessageList = Collections.singletonList(wechatMessage);
+        List<ChatMessage> chatMessageList = wechatMessageList.stream().map(item -> {
+            if (item.getFromUserName().equals(wechatMessage.getFromUserName())) {
+                return new ChatMessage(ChatMessageRole.USER.value(), item.getContent());
+            } else {
+                return new ChatMessage(ChatMessageRole.ASSISTANT.value(), item.getContent());
+            }
+        }).collect(Collectors.toList());
+
+        try {
+            OpenAiService service = new OpenAiService(customProperties.getOpenAi().getApiKey(), Duration.ofSeconds(60));
+
+            ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
+                    .model("gpt-3.5-turbo")
+                    .messages(chatMessageList)
+                    .maxTokens(4000)
+                    .temperature(0.8)
+                    .build();
+
+            List<ChatCompletionChoice> choiceList = service.createChatCompletion(chatCompletionRequest).getChoices();
+            for (ChatCompletionChoice chatCompletionChoice : choiceList) {
+                LOGGER.info("openai 响应结果：{}", chatCompletionChoice.toString());
+            }
+            return choiceList.get(0).getMessage().getContent();
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+            String exceptionMessage = ExceptionUtil.getExceptionMessage(e);
+            if (exceptionMessage != null && exceptionMessage.toLowerCase().contains("timeout")) {
+                return "内容太多我脑子装不下啦>:<";
+            } else {
+                return exceptionMessage;
+            }
+        }
+    }
+
+    public String completionRequest(WechatMessage wechatMessage) {
+        try {
+            OpenAiService service = new OpenAiService(customProperties.getOpenAi().getApiKey(), Duration.ofSeconds(60));
+
+            CompletionRequest completionRequest = CompletionRequest.builder()
+                    .model("text-davinci-003")
+                    .prompt(wechatMessage.getContent())
+                    .maxTokens(4000)
+                    .temperature(0.8)
+                    .build();
+            return service.createCompletion(completionRequest).getChoices().get(0).getText();
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+            String exceptionMessage = ExceptionUtil.getExceptionMessage(e);
+            if (exceptionMessage != null && exceptionMessage.toLowerCase().contains("timeout")) {
+                return "内容太多我脑子装不下啦>:<";
+            } else {
+                return exceptionMessage;
+            }
+        }
+
+    }
 }

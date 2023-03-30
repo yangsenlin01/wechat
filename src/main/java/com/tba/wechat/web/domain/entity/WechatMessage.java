@@ -39,6 +39,6 @@ public class WechatMessage {
     @NotBlank(message = "文本消息内容不能为空")
     private String content;
 
+    @NotBlank(message = "消息id不能为空")
     private Long msgId;
-
 }

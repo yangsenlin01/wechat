@@ -105,7 +105,7 @@ class WechatApplicationTests {
         } catch (ParserConfigurationException e) {
             e.printStackTrace();
             try {
-                map.put("Content", "yy好像出了点问题");
+                map.put("Content", "出了点问题");
                 xml = WechatUtils.generatorXml(map);
             } catch (ParserConfigurationException ex) {
                 xml = "";
