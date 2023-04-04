@@ -3,12 +3,15 @@ package com.tba.wechat;
 import cn.hutool.http.HttpRequest;
 import com.alibaba.fastjson.JSON;
 import com.tba.wechat.util.WechatUtils;
+import com.tba.wechat.web.domain.entity.WechatCustomAccount;
+import com.tba.wechat.web.service.IWechatCustomAccountService;
 import com.theokanning.openai.completion.CompletionRequest;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.completion.chat.ChatMessage;
 import com.theokanning.openai.completion.chat.ChatMessageRole;
 import com.theokanning.openai.service.OpenAiService;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -21,6 +24,19 @@ import java.util.Map;
 class WechatApplicationTests {
 
     private final String API_KEY = "";
+
+    @Autowired
+    private IWechatCustomAccountService customAccountService;
+
+    @Test
+    void testMysql() {
+        WechatCustomAccount wechatCustomAccount = new WechatCustomAccount();
+        wechatCustomAccount.setKfAccount("abcdef");
+        wechatCustomAccount.setKfNick("tom");
+        wechatCustomAccount.setKfId("qqq");
+        customAccountService.save(wechatCustomAccount);
+        System.out.println(wechatCustomAccount);
+    }
 
     @Test
     void testHutools() {

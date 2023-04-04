@@ -1,5 +1,6 @@
 package com.tba.wechat.web.domain.entity;
 
+import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Getter;
@@ -21,6 +22,7 @@ import javax.validation.constraints.NotBlank;
 @Setter
 @ToString
 @TableName("wechat_custom_account")
+@KeySequence(value = "wechat_custom_account_seq")
 public class WechatCustomAccount {
 
     @TableId

@@ -1,14 +1,23 @@
 package com.tba.wechat.config.mybatisplus.config;
 
 import com.baomidou.mybatisplus.annotation.DbType;
+import com.baomidou.mybatisplus.core.incrementer.IKeyGenerator;
+import com.baomidou.mybatisplus.extension.incrementer.OracleKeyGenerator;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.BlockAttackInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
+import com.tba.wechat.exception.CustomException;
 import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 /**
  * @author 1050696985@qq.com
@@ -21,6 +30,17 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableTransactionManagement(proxyTargetClass = true)
 @MapperScan("com.tba.wechat.web.mapper")
 public class MybatisPlusConfig {
+
+    @Bean
+    @ConditionalOnProperty(name = "mybatis-plus.global-config.db-config.id-type", havingValue = "input")
+    public IKeyGenerator keyGenerator(DataSource dataSource) throws SQLException {
+        Connection connection = DataSourceUtils.getConnection(dataSource);
+        String databaseProductName = connection.getMetaData().getDatabaseProductName();
+        if ("Oracle".equals(databaseProductName)) {
+            return new OracleKeyGenerator();
+        }
+        throw new CustomException("未识别的数据库厂商：" + databaseProductName);
+    }
 
     @Bean
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
