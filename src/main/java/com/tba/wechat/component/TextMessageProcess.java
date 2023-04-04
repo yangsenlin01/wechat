@@ -8,6 +8,7 @@ import com.tba.wechat.util.ExceptionUtil;
 import com.tba.wechat.util.WechatUtils;
 import com.tba.wechat.web.domain.entity.WechatMessage;
 import com.tba.wechat.web.domain.entity.WechatWhiteList;
+import com.tba.wechat.web.service.IWechatCustomAccountService;
 import com.tba.wechat.web.service.IWechatMessageService;
 import com.tba.wechat.web.service.IWechatWhiteListService;
 import com.theokanning.openai.completion.CompletionRequest;
@@ -45,26 +46,35 @@ public class TextMessageProcess {
     private final IWechatMessageService wechatMessageService;
     private final IWechatWhiteListService wechatWhiteListService;
     private final CustomProperties customProperties;
+    private final IWechatCustomAccountService customAccountService;
 
-    public TextMessageProcess(IWechatMessageService wechatMessageService, IWechatWhiteListService wechatWhiteListService, CustomProperties customProperties) {
+    public TextMessageProcess(IWechatMessageService wechatMessageService, IWechatWhiteListService wechatWhiteListService, CustomProperties customProperties, IWechatCustomAccountService customAccountService) {
         this.wechatMessageService = wechatMessageService;
         this.wechatWhiteListService = wechatWhiteListService;
         this.customProperties = customProperties;
+        this.customAccountService = customAccountService;
     }
 
     /**
      * 收到文本的后续操作
      *
+     * @param token   token
      * @param message 文本对象
      * @return 返回客户端的消息
      */
-    public String process(TextMessage message) {
+    public String process(String token, TextMessage message) {
 
         // 查询是否白名单用户
         LambdaQueryWrapper<WechatWhiteList> whiteListQueryWrapper = new LambdaQueryWrapper<>();
         whiteListQueryWrapper.eq(WechatWhiteList::getOpenId, message.getFromUserName());
         if (wechatWhiteListService.count(whiteListQueryWrapper) == 0) {
             return this.replyMessage(message.getFromUserName(), message.getToUserName(), message.getCreateTime(), "你好");
+        }
+
+        if (message.getContent().startsWith("添加客服")) {
+            String[] split = message.getContent().trim().split(",");
+            LOGGER.info("添加客服：{}", message.getContent());
+            return customAccountService.addCustomAccount(token, split[1], split[1], split[2]) ? "添加成功" : "添加失败";
         }
 
         // 查询消息是否已回复

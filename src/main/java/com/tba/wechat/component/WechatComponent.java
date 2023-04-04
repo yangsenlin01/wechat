@@ -1,13 +1,9 @@
 package com.tba.wechat.component;
 
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.HttpRequest;
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.tba.wechat.component.type.TextMessage;
 import com.tba.wechat.config.properties.CustomProperties;
-import com.tba.wechat.exception.CustomException;
 import com.tba.wechat.util.Sha1Utils;
 import com.tba.wechat.util.WechatUtils;
 import com.tba.wechat.web.domain.entity.WechatToken;
@@ -97,7 +93,7 @@ public class WechatComponent {
         }
 
         if (o.getClass() == TextMessage.class) {
-            return textMessageProcess.process((TextMessage) o);
+            return textMessageProcess.process(this.getToken(), (TextMessage) o);
         } else {
             return "";
         }
@@ -118,23 +114,7 @@ public class WechatComponent {
             }
         }
 
-        String url = String.format("https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=%s&secret=%s",
-                customProperties.getWechat().getAppId(),
-                customProperties.getWechat().getAppSecret());
-
-        String body = HttpRequest.get(url)
-                .execute()
-                .body();
-        LOGGER.info("请求微信token，响应结果为：{}", body);
-
-        if (StrUtil.isBlank(body)) {
-            throw new CustomException("请求微信token失败");
-        }
-        // {"access_token":"ACCESS_TOKEN","expires_in":7200}
-        JSONObject jsonObject = JSON.parseObject(body);
-        if (jsonObject.get("errcode") != null && !"0".equals(jsonObject.getString("errcode"))) {
-            throw new CustomException("请求微信token失败");
-        }
+        JSONObject jsonObject = WechatUtils.getToken(customProperties.getWechat().getAppId(), customProperties.getWechat().getAppSecret());
 
         String token = jsonObject.getString("access_token");
         Integer expiresIn = jsonObject.getInteger("expires_in");
