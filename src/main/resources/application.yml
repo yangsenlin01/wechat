@@ -31,6 +31,9 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/wechat?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true}
     username: ${SPRING_DATASOURCE_USERNAME:root}
     password: ${SPRING_DATASOURCE_PASSWORD:123456}
+    #url: jdbc:oracle:thin:@//localhost:1521/oracle
+    #username: ${SPRING_DATASOURCE_USERNAME:root}
+    #password: ${SPRING_DATASOURCE_PASSWORD:123456}
     hikari:
       minimum-idle: 5
       maximum-pool-size: 10
@@ -38,7 +41,7 @@ spring:
       pool-name: MyHikariCP
       max-lifetime: 1800000
       connection-timeout: 30000
-      connection-test-query: select 1
+      connection-test-query: select 1 from dual
 
   # 文件上传
   servlet:

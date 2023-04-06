@@ -36,6 +36,12 @@ class WechatApplicationTests {
     void testMysql() {
         List<WechatCustomAccount> wechatCustomAccountList = wechatCustomAccountMapper.listAll();
         wechatCustomAccountList.forEach(System.out::println);
+//        WechatCustomAccount wechatCustomAccount = new WechatCustomAccount();
+//        wechatCustomAccount.setKfAccount("account2");
+//        wechatCustomAccount.setKfId("id2");
+//        wechatCustomAccount.setKfNick("nick2");
+//        wechatCustomAccount.setKfHeadImgUrl("imgUrl2");
+//        customAccountService.save(wechatCustomAccount);
     }
 
     @Test

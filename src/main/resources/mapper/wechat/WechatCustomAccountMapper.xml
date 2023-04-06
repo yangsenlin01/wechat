@@ -11,7 +11,7 @@
     </select>
 
     <select id="listAll" databaseId="oracle" resultType="com.tba.wechat.web.domain.entity.WechatCustomAccount">
-        select *, 'oracle' as kfHeadImgUrl from wechat_custom_account
+        select w.*, 'oracle' as "kfHeadImgUrl" from wechat_custom_account w
     </select>
 
 </mapper>
