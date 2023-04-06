@@ -4,6 +4,7 @@ import cn.hutool.http.HttpRequest;
 import com.alibaba.fastjson.JSON;
 import com.tba.wechat.util.WechatUtils;
 import com.tba.wechat.web.domain.entity.WechatCustomAccount;
+import com.tba.wechat.web.mapper.WechatCustomAccountMapper;
 import com.tba.wechat.web.service.IWechatCustomAccountService;
 import com.theokanning.openai.completion.CompletionRequest;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
@@ -28,14 +29,13 @@ class WechatApplicationTests {
     @Autowired
     private IWechatCustomAccountService customAccountService;
 
+    @Autowired
+    private WechatCustomAccountMapper wechatCustomAccountMapper;
+
     @Test
     void testMysql() {
-        WechatCustomAccount wechatCustomAccount = new WechatCustomAccount();
-        wechatCustomAccount.setKfAccount("abcdef");
-        wechatCustomAccount.setKfNick("tom");
-        wechatCustomAccount.setKfId("qqq");
-        customAccountService.save(wechatCustomAccount);
-        System.out.println(wechatCustomAccount);
+        List<WechatCustomAccount> wechatCustomAccountList = wechatCustomAccountMapper.listAll();
+        wechatCustomAccountList.forEach(System.out::println);
     }
 
     @Test

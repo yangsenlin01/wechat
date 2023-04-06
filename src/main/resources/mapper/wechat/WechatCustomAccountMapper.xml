@@ -2,4 +2,12 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.tba.wechat.web.mapper.WechatCustomAccountMapper">
 
+    <select id="listAll" resultType="com.tba.wechat.web.domain.entity.WechatCustomAccount">
+        select * from wechat_custom_account
+    </select>
+
+    <select id="listAll" databaseId="mysql" resultType="com.tba.wechat.web.domain.entity.WechatCustomAccount">
+        select *, 'mysql' as kfHeadImgUrl from wechat_custom_account
+    </select>
+
 </mapper>
