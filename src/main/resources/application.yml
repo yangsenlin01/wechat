@@ -24,7 +24,7 @@ spring:
   application:
     name: wechat
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:windows}
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     type: com.zaxxer.hikari.HikariDataSource
