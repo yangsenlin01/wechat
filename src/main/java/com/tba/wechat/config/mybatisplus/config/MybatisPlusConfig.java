@@ -49,14 +49,14 @@ public class MybatisPlusConfig {
     public IKeyGenerator keyGenerator(DataSource dataSource) throws SQLException {
         Connection connection = DataSourceUtils.getConnection(dataSource);
         String databaseProductName = connection.getMetaData().getDatabaseProductName();
-        if ("Oracle".equals(databaseProductName)) {
+        if ("Oracle".equalsIgnoreCase(databaseProductName)) {
             return new OracleKeyGenerator();
         }
         throw new CustomException("未识别的数据库厂商：" + databaseProductName);
     }
 
     @Bean
-    public MybatisPlusInterceptor mybatisPlusInterceptor() {
+    public MybatisPlusInterceptor mybatisPlusInterceptor(DataSource dataSource) throws SQLException {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
 
         // 乐观锁插件
@@ -64,7 +64,7 @@ public class MybatisPlusConfig {
         // 防止全表更新与删除
         interceptor.addInnerInterceptor(blockAttackInnerInterceptor());
         // 分页插件
-        interceptor.addInnerInterceptor(paginationInnerInterceptor());
+        interceptor.addInnerInterceptor(paginationInnerInterceptor(dataSource));
         // 分页插件
         //interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
         return interceptor;
@@ -73,10 +73,12 @@ public class MybatisPlusConfig {
     /**
      * 分页插件，自动识别数据库类型 https://baomidou.com/guide/interceptor-pagination.html
      */
-    private PaginationInnerInterceptor paginationInnerInterceptor() {
+    private PaginationInnerInterceptor paginationInnerInterceptor(DataSource dataSource) throws SQLException {
         PaginationInnerInterceptor paginationInnerInterceptor = new PaginationInnerInterceptor();
-        // 设置数据库类型为mysql
-        paginationInnerInterceptor.setDbType(DbType.MYSQL);
+        // 设置数据库类型
+        Connection connection = DataSourceUtils.getConnection(dataSource);
+        String databaseProductName = connection.getMetaData().getDatabaseProductName();
+        paginationInnerInterceptor.setDbType(DbType.getDbType(databaseProductName.toLowerCase()));
         // 设置最大单页限制数量，默认 500 条，-1 不受限制
         // paginationInnerInterceptor.setMaxLimit(-1L);
         return paginationInnerInterceptor;
